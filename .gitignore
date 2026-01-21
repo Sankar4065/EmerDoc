@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+*.log
+
+# Python virtual env
+venv/
+.venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Qdrant local data (if any)
+qdrant_storage/
+
+# IDE
+.vscode/
+.idea/
