@@ -1,3 +1,5 @@
+from modality.modality_router import normalize_input
+
 from intent.intent_extractor import extract_intent
 from knowledge.llm_generator import generate_knowledge
 from knowledge.point_parser import split_into_points
@@ -28,7 +30,6 @@ from agent.reasoning_utils import (
 )
 
 
-
 BLOCKED_PREFIXES = (
     "what is",
     "types of",
@@ -47,30 +48,45 @@ BLOCKED_PREFIXES = (
 )
 
 
-
-def run_agent(query: str, user_id: str):
+def run_agent(
+    query: str | None = None,
+    user_id: str = "default",
+    image_path: str | None = None,
+    audio_path: str | None = None
+):
     print("\n================= NEW QUERY =================")
-    print("USER QUERY:", query)
+
+    # 🔹 Normalize multimodal input → TEXT
+    query = normalize_input(
+        text=query,
+        image_path=image_path,
+        audio_path=audio_path
+    )
+
+    if not query:
+        return "No valid input provided."
+
+    print("NORMALIZED QUERY:", query)
     print("============================================\n")
 
     # 1️⃣ Init memory
     init_collection()
     init_long_term_collection()
 
-    # 2️⃣ Extract intent
+    # 2️⃣ Intent extraction
     intent = extract_intent(query)
     print("INTENT:", intent, "\n")
 
-    # 3️⃣ Generate LLM knowledge (internal only)
+    # 3️⃣ Internal LLM generation
     raw_knowledge = generate_knowledge(intent)
     print("RAW LLM OUTPUT:\n", raw_knowledge, "\n")
 
-    # 4️⃣ Split into candidate points
+    # 4️⃣ Split into points
     points = split_into_points(raw_knowledge)
 
     print("STORING SAFE ACTION POINTS:\n")
 
-    # 5️⃣ STRICT + CORRECT FILTERING
+    # 5️⃣ Strict filtering
     for p in points:
         clean = normalize_point(p)
 
@@ -82,11 +98,11 @@ def run_agent(query: str, user_id: str):
             print("✔", clean)
             store_temp_knowledge(clean)
 
-    # 6️⃣ Long-term memory (REASONING ONLY)
+    # 6️⃣ Past memory (reasoning only)
     past_memory = retrieve_long_term_memory(query)
-    print("PAST MEMORY (FOR REASONING ONLY):\n", past_memory, "\n")
+    print("PAST MEMORY:\n", past_memory, "\n")
 
-    # 7️⃣ Vector retrieval (ANSWER SOURCE)
+    # 7️⃣ Retrieval + reranking
     retrieved = rerank_with_past_memory(
         retrieve_temp_knowledge(query),
         past_memory
@@ -94,21 +110,15 @@ def run_agent(query: str, user_id: str):
 
     retrieved = remove_repeated_advice(retrieved, past_memory)
 
-    print("\nRETRIEVED ANSWER:\n", retrieved, "\n")
+    print("RETRIEVED ANSWER:\n", retrieved, "\n")
 
     # 8️⃣ Store learning
-    store_long_term_memory(
-        text=query,
-        category="user_query"
-    )
+    store_long_term_memory(text=query, category="user_query")
 
     for p in retrieved:
-        store_long_term_memory(
-            text=p,
-            category="validated_first_aid"
-        )
+        store_long_term_memory(text=p, category="validated_first_aid")
 
-    # 9️⃣ Context + reasoning
+    # 9️⃣ Reasoning
     context = build_context(
         retrieved_points=retrieved,
         intent=intent,
@@ -116,4 +126,3 @@ def run_agent(query: str, user_id: str):
     )
 
     return reason(context)
-
