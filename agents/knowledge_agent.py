@@ -8,12 +8,14 @@ class KnowledgeAgent(Agent):
             return context
 
         print("Knowledge agent running...")
-        intent = context["intent"]
 
-        raw = generate_knowledge(intent)
+        issue = context.get("issue")
+        symptoms = context.get("symptoms", [])
+
+        raw = generate_knowledge(issue, symptoms)
         points = split_into_points(raw)
 
-        print(f"[DEBUG][KNOWLEDGE] Raw points generated → {len(points)}")
+        print(f"[DEBUG][KNOWLEDGE] Raw points → {len(points)}")
         for p in points:
             print("  →", p)
 

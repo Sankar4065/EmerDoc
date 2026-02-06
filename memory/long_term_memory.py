@@ -1,10 +1,22 @@
 import uuid
+from datetime import datetime, timedelta
+
 from qdrant_client.models import VectorParams, Distance, PointStruct
+
 from intent.embedder import embed
 from memory.qdrant_client import client
 
+
+# ======================================================
+# COLLECTION CONFIG
+# ======================================================
+
 LONG_TERM_COLLECTION = "long_term_memory"
 
+
+# ======================================================
+# INIT (USED BY app.py STARTUP)
+# ======================================================
 
 def init_long_term_collection():
     collections = client.get_collections().collections
@@ -18,18 +30,63 @@ def init_long_term_collection():
                 distance=Distance.COSINE
             )
         )
+        print("[DEBUG][INIT] Long-term episodic collection created")
+    else:
+        print("[DEBUG][INIT] Long-term episodic collection already exists")
 
 
-def store_long_term_memory(text: str, category: str = "general"):
-    vector = embed(text)
+# ======================================================
+# EPISODE CREATION
+# ======================================================
+
+def create_episode(user_id: str) -> dict:
+    start = datetime.utcnow()
+    end = start + timedelta(hours=24)
+
+    episode = {
+        "episode_id": str(uuid.uuid4()),
+        "user_id": user_id,
+
+        "episode_start": start.isoformat(),
+        "episode_end": end.isoformat(),
+
+        "symptoms": [],
+        "cause": None,
+        "issue": None,
+
+        "care_suggestions": [],
+        "source": "episodic_chat"
+    }
+
+    print(f"[DEBUG][EPISODE] Created new episode → {episode['episode_id']}")
+    print(f"[DEBUG][EPISODE] Start → {episode['episode_start']}")
+    print(f"[DEBUG][EPISODE] End   → {episode['episode_end']}")
+
+    return episode
+
+
+# ======================================================
+# STORE / UPSERT EPISODE
+# ======================================================
+
+def store_episode(episode: dict):
+    print(f"[DEBUG][EPISODE] Storing episode → {episode['episode_id']}")
+    print(f"[DEBUG][EPISODE] Care suggestions count → {len(episode['care_suggestions'])}")
+
+    # Vector uses ONLY safe abstractions
+    text_for_embedding = " ".join(episode["care_suggestions"])
+
+    if not text_for_embedding:
+        text_for_embedding = episode["user_id"]
+
+    vector = embed(text_for_embedding)
 
     point = PointStruct(
-        id=str(uuid.uuid4()),
+        id=episode["episode_id"],
         vector=vector,
         payload={
-            "type": "long_term",
-            "category": category,
-            "text": text
+            "type": "episodic",
+            "episode": episode
         }
     )
 
@@ -38,21 +95,45 @@ def store_long_term_memory(text: str, category: str = "general"):
         points=[point]
     )
 
+    print("[DEBUG][EPISODE] Episode stored in Qdrant")
 
-def retrieve_long_term_memory(query: str, limit: int = 3):
-    query_vector = embed(query)
 
-    results = client.query_points(
+# ======================================================
+# RETRIEVE LATEST EPISODE FOR USER
+# ======================================================
+
+def retrieve_latest_episode(user_id: str):
+    results, _ = client.scroll(
         collection_name=LONG_TERM_COLLECTION,
-        query=query_vector,
-        limit=limit,
-        with_payload=True
+        with_payload=True,
+        limit=20
     )
 
-    memories = []
+    episodes = []
 
-    for r in results.points:
-        if r.payload.get("type") == "long_term":
-            memories.append(r.payload["text"])
+    for r in results:
+        payload = r.payload or {}
 
-    return memories
+        if payload.get("type") != "episodic":
+            continue
+
+        episode = payload.get("episode")
+        if not episode:
+            continue
+
+        if episode.get("user_id") == user_id:
+            episodes.append(episode)
+
+    if not episodes:
+        print("[DEBUG][EPISODE] No existing episode found")
+        return None
+
+    episodes.sort(
+        key=lambda e: e["episode_start"],
+        reverse=True
+    )
+
+    latest = episodes[0]
+    print(f"[DEBUG][EPISODE] Retrieved latest episode → {latest['episode_id']}")
+
+    return latest
