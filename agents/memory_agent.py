@@ -1,17 +1,6 @@
 from agents.base import Agent
-
-from memory.temp_memory import (
-    store_temp_knowledge,
-    retrieve_temp_knowledge
-)
-
-from memory.long_term_memory import (
-    create_episode,
-    store_episode,
-    retrieve_latest_episode
-)
-
-from memory.personal_data import store_personal_medical_data
+from memory.temp_memory import store_temp_knowledge, retrieve_temp_knowledge
+from memory.long_term_memory import create_episode, store_episode, retrieve_latest_episode
 from memory.input_time_tracker import InputTimeTracker
 
 time_tracker = InputTimeTracker()
@@ -28,21 +17,15 @@ class MemoryAgent(Agent):
         query = context["query"]
         validated = context.get("validated_points", [])
 
-        # -------------------------------------------------
-        # SHORT-TERM MEMORY
-        # -------------------------------------------------
+        # ---------------- TEMP MEMORY ----------------
         for p in validated:
-            print("[DEBUG][MEMORY] Temp store →", p)
             store_temp_knowledge(p)
 
-        top_points = retrieve_temp_knowledge(query, limit=3)
-        print("[DEBUG][MEMORY] Retrieved temp →", top_points)
+        top = retrieve_temp_knowledge(query, limit=3)
+        print("[DEBUG][MEMORY] Retrieved temp →", top)
 
-        # -------------------------------------------------
-        # EPISODIC MEMORY
-        # -------------------------------------------------
+        # ---------------- EPISODE ----------------
         gap = time_tracker.check_time_gap()
-
         episode = (
             retrieve_latest_episode(user_id)
             if gap == "less_than_30_minutes"
@@ -52,31 +35,16 @@ class MemoryAgent(Agent):
         if episode is None:
             episode = create_episode(user_id)
 
-        for p in top_points:
+        for p in top:
             if p not in episode["care_suggestions"]:
                 episode["care_suggestions"].append(p)
 
         store_episode(episode)
 
-        # -------------------------------------------------
-        # 🔥 PERSONAL MEMORY STORE (FINAL)
-        # -------------------------------------------------
-        print("[DEBUG][PERSONAL] Storing personal data")
-
-        store_personal_medical_data(
-            name=user_id,
-            symptoms=context.get("symptoms", []),
-            cause=None,
-            issue=context.get("issue"),
-            care_suggestions=top_points
-        )
-
-        # -------------------------------------------------
-        # OUTPUT
-        # -------------------------------------------------
-        context["retrieved"] = top_points
+        # 🔥 PASS EPISODE ID FOR FINAL STORAGE
+        context["episode_id"] = episode["episode_id"]
+        context["retrieved"] = top
         context["past_memory"] = [episode]
 
-        print("[DEBUG][MEMORY] Done")
-
+        print("[DEBUG][MEMORY] Episode updated →", episode["episode_id"])
         return context
