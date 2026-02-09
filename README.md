@@ -1,48 +1,92 @@
-# 🏥 EmerDoc: Privacy-First Emergency AI
----
-
-## 📌 Overview
-
-**EmerDoc** is a privacy-preserving AI system designed to provide **safe, non-diagnostic emergency first-aid guidance** using **text, image, and audio inputs**.  
-The system ensures **no raw user data is stored or sent externally** — only extracted intents and safe action points are processed.
-A RAG system which uses **vectored memory (qdrant)semantic search and retrieval**
-EmerDoc is built for **hackathons, research prototypes, and real-world emergency assistance scenarios** where privacy and safety are critical.
+# 🏥 EmerDoc  
+### Privacy-First Multimodal Emergency Intelligence System
 
 ---
 
-## 🎯 Key Objectives
+## 📌 Abstract
 
-- Provide **general first-aid guidance** without diagnosis or medication
-- Ensure **strict privacy boundaries** (no raw data retention)
-- Support **multimodal inputs** (text, image, audio)
-- Avoid repetitive advice using memory-aware reasoning
-- Use **local processing wherever possible**
-- **RAG** system which uses **qdrant semantic search with meta data filtering**
-- Relay on semantic search for ensured knowledge generation 
+**EmerDoc** is a **privacy-preserving, multimodal medical intelligence system** designed to assist users with **non-diagnostic, safe emergency first-aid guidance** while maintaining **strict data isolation and memory control**.
+
+Unlike conventional medical chatbots, EmerDoc introduces **episodic reasoning**, **controlled semantic memory**, and **escalation-aware decision logic**, ensuring that:
+- advice is **contextually consistent across time**,  
+- **unsafe medical escalation is blocked**, and  
+- **no raw personal data is permanently retained**.
+
+EmerDoc is engineered as both:
+1. a **consumer-facing emergency assistant**, and  
+2. a **foundation layer for future clinical pattern-analysis tools**.
+
 ---
 
-## 🧠 System Architecture (High Level)
+## 🎯 Problem Statement
 
- User Input (Text / Image / Audio)
+### ❓ What problem does EmerDoc address?
+
+- Emergency situations require **immediate guidance**, but:
+  - doctors are unavailable,
+  - internet access may be limited,
+  - and existing AI tools over-diagnose or hallucinate.
+
+- Medical AI systems often:
+  - store raw personal data,
+  - escalate incorrectly,
+  - or give unsafe medical advice.
+
+### ❗ Why does it matter?
+
+- For every **1000 people**, there is **<1 doctor** in many regions.
+- Incorrect medical advice can cause **panic, harm, or legal risk**.
+- Privacy breaches in health data are **irreversible**.
+
+EmerDoc solves this by enforcing **engineering-level safety and privacy guarantees**.
+
+---
+
+## 🧠 Core Innovation
+
+EmerDoc introduces **three novel design principles**:
+
+### 1️⃣ Episodic Medical Reasoning  
+User interactions are grouped into **time-bounded episodes**, allowing:
+- symptom accumulation across turns,
+- stable issue inference,
+- prevention of contradictory advice.
+
+### 2️⃣ Escalation-Aware Issue Control  
+A severity-ranked escalation guard ensures:
+- issues only escalate when **symptom evidence supports it**,
+- dangerous jumps (e.g., *cold → pneumonia*) are blocked.
+
+### 3️⃣ Memory-Safe RAG Architecture  
+Retrieval-Augmented Generation is implemented with:
+- **TTL-based temporary memory** (auto-expires),
+- **episodic long-term memory** (validated only),
+- **personal memory overwrite rules** (no silent accumulation).
+
+---
+
+## 🧩 System Architecture
+
+User Input (Text / Image / Audio)
 ↓
 Modality Router
 (Text normalization only)
 ↓
-Intent Extractor (Privacy Boundary)
+Intent & Symptom Extraction
+↓
+Issue Refinement + Escalation Guard
 ↓
 LLM Knowledge Generator (Internal)
 ↓
-Safety Filters + Knowledge Limiter
+Safety & Action Filters
 ↓
 Temporary Memory (Qdrant + TTL)
 ↓
-Long-Term Memory (Qdrant)
+Episodic Memory (Qdrant)
 ↓
-Context Builder
+Reasoning Agent
 ↓
-Reasoning Engine
-↓
-Final Safe First-Aid Output
+Safe First-Aid Output
 
 
 
@@ -50,207 +94,168 @@ Final Safe First-Aid Output
 
 ## 🔒 Privacy-First Design
 
-- Raw **images and audio are deleted immediately** after processing
-- Only **normalized text and intent keywords** flow into the system
-- No personal identifiers are stored
-- Temporary memory auto-expires using TTL
-- Long-term memory stores **validated advice and queries**
+EmerDoc enforces **hard privacy boundaries**:
+
+- ❌ No raw images stored  
+- ❌ No raw audio stored  
+- ❌ No diagnosis or medication  
+- ❌ No irreversible personal data accumulation  
+
+✅ Only **normalized text** enters reasoning  
+✅ Temporary memory auto-expires  
+✅ Personal memory is **episode-scoped and replaceable**  
+
+> Privacy is enforced **by architecture**, not policy.
 
 ---
 
-## 🧩 Features
+## 🧠 Multi-Agent Pipeline
 
-- ✅ Text-based first-aid queries
-- ✅ Image understanding using BLIP (local vision model)
-- ✅ Audio transcription using Whisper (local)
-- ✅ Vector memory using Qdrant
-- ✅ Re-ranking using past memory
-- ✅ Repetition avoidance
-- ✅ Strict medical safety filtering
-- ❌ No diagnosis
-- ❌ No medication advice
+| Agent | Responsibility |
+|-----|---------------|
+| PlannerAgent | Controls execution stages |
+| KnowledgeAgent | Generates educational first-aid actions |
+| CriticAgent | Filters unsafe or non-actionable content |
+| MemoryAgent | Manages episodic & TTL memory |
+| ReasoningAgent | Finalizes stable episode output |
+
+---
+
+## 🧪 Multimodal Strategy
+
+| Modality | Technology | Scope |
+|--------|-----------|------|
+| Text | Intent + LLM | Primary reasoning |
+| Image | BLIP (local) | Caption → text |
+| Audio | Whisper (local) | Transcription |
+
+> Multimodal inputs are **converted to text**, then discarded.
+
+---
+
+## 🧠 Memory Architecture
+
+### 🔹 Temporary Memory (TTL)
+- Stores validated actions
+- Auto-expires
+- Prevents repetition
+
+### 🔹 Episodic Memory
+- Groups interactions within time windows
+- Maintains symptom continuity
+
+### 🔹 Personal Memory
+- Overwritten per episode
+- Used only for **probabilistic priors**
+- Never directly exposed
 
 ---
 
 ## 🛠️ Technology Stack
 
 ### Backend
-- **Python 3.14**
-- **FastAPI**
-- **Uvicorn**
+- Python 3.14
+- FastAPI
+- Uvicorn
 
 ### AI / ML
-- **Groq LLM API** (text knowledge generation)
-- **Whisper (local)** – audio to text
-- **BLIP Image Captioning (local)** – image to text
-- **Sentence Transformers** – embeddings
+- Groq LLM API (text reasoning)
+- Whisper (local speech-to-text)
+- BLIP (local image captioning)
+- Sentence-Transformers (embeddings)
 
-### Vector Database
-- **Qdrant (Docker)**
-
-### Utilities
-- FFmpeg (audio processing)
-- Pillow (image handling)
-- Torch (model inference)
-
----
-
-## 📂 Project Structure
-
-privacy_agent/
-│
-├── agent/
-│ ├── agent.py
-│ ├── context_builder.py
-│ ├── reasoning.py
-│ └── reasoning_utils.py
-│
-├── intent/
-│ ├── intent_extractor.py
-│ └── embedder.py
-│
-├── knowledge/
-│ ├── llm_generator.py
-│ ├── point_parser.py
-│ ├── knowledge_limiter.py
-│ └── safety.py
-│
-├── memory/
-│ ├── qdrant_client.py
-│ ├── temp_memory.py
-│ └── long_term_memory.py
-│
-├── modality/
-│ ├── image_processor.py
-│ ├── audio_processor.py
-│ └── modality_router.py
-│
-├── app.py
-├── requirements.txt
-└── README.md  
-
-
+### Vector Store
+- Qdrant (Docker, local)
 
 ---
 
 ## 🚀 Installation & Setup
 
----
-
-### 1️⃣ Clone the repository
-
-git clone https://github.com/<Sankar4065>/EmerDoc.git
+### 1️⃣ Clone
+```bash
+git clone https://github.com/Sankar4065/EmerDoc.git
 cd EmerDoc
 
----
 
-### 2️⃣ Install dependencies
 
+2️⃣ Install dependencies
 pip install -r requirements.txt
 
-
-###  3️⃣ Run Qdrant (Docker)
-
-
+3️⃣ Run Qdrant
 docker run -p 6333:6333 qdrant/qdrant
 
+4️⃣ Set API key
+$env:GROQ_API_KEY="your_api_key_here"
 
-### 4️⃣ Set Groq API Key
-
-
- $env:GROQ_API_KEY="gsk_your_real_api_key_here"
-
-
-### 5️⃣ Run the application
-
-
+5️⃣ Run server
 python -m uvicorn app:app --reload
 
-
-
-### API Usage
-
-
-
-
+📡 API Usage
 Health Check
 GET /
 
-Ask Endpoint (Multimodal)
+Main Endpoint
 POST /ask
 
 
-Form Parameters
+Form Inputs
 
-query (optional) – text input
+query (optional)
 
-image (optional) – image file
+image (optional)
 
-audio (optional) – audio file
+audio (optional)
 
 user_id (optional)
 
-
-
-
-### ⚠️ Safety Constraints
+⚠️ Safety Guarantees
 
 EmerDoc WILL NOT:
 
-Diagnose medical conditions
+Diagnose conditions
 
-Suggest medicines or dosages
+Prescribe medication
 
-Replace professional medical help
+Replace doctors
 
 EmerDoc WILL:
 
-Provide general first-aid actions
+Provide safe first-aid actions
 
-Encourage rest, hydration, safety
+Encourage rest, hydration, monitoring
 
-Avoid unsafe or repetitive 
+Block unsafe escalation
 
+🌍 Impact
 
+Emergency guidance in low-resource regions
 
-#### 🌍 Impact
+Ethical AI in healthcare
 
-Enables emergency guidance in low-resource settings
+Strong privacy guarantees
 
-Protects user privacy in sensitive health scenarios
+Scalable clinical intelligence foundation
 
-Reduces misinformation during emergencies
+🔮 Future Directions
 
-Demonstrates ethical AI deployment
+Offline LLM deployment
 
+Multilingual reasoning
 
+Doctor-facing diagnostic pattern analysis
 
-##### 🔮 Future Scope
+Edge & mobile deployment
 
-Offline-only LLM integration
+Federated medical embeddings
 
-Multilingual support
+📜 License
 
-Wearable device integration
+Educational & hackathon use only.
+Medical use requires regulatory compliance.
 
-Edge deployment (mobile / Raspberry Pi)
+🙌 Author
 
-Emergency escalation logic
-
-system can be used to develop ai based mobile software
-
-######  📜 License
-
-This project is developed for educational and hackathon purposes.
-Use responsibly and ethically.
-
-
-
-###### 🙌 Author
-
-YALLA SATYA SIVA SANKAR 
-JNTUGV CEV VIZIANAGARAM 
-ROLL 22VV1A0459
-EmerDoc – Privacy-First Emergency AI
-
+Yalla Satya Siva Sankar
+JNTUGV CEV, Vizianagaram
+EmerDoc — Privacy-First Medical Intelligence
 

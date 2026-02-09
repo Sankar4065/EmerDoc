@@ -17,15 +17,21 @@ class ReasoningAgent(Agent):
         care = context.get("retrieved", [])
 
         # ==================================================
-        # EPISODIC MEMORY (MERGE, NOT OVERWRITE)
+        # EPISODIC MEMORY (CORRECT MERGE LOGIC)
         # ==================================================
         previous_symptoms = episode.get("symptoms", [])
-        previous_care = episode.get("care_suggestions", [])
 
+        # ✅ Symptoms should accumulate
         episode["symptoms"] = list(set(previous_symptoms + symptoms))
-        episode["issues"] = [issue] if issue else episode.get("issues", [])
+
+        # ✅ Issue should remain stable per episode
+        if issue:
+            episode["issues"] = [issue]
+
+        # 🔥 FIX: Do NOT accumulate old care suggestions
+        # Use ONLY current retrieved safe actions
         episode["care_suggestions"] = list(
-            set(previous_care + care)
+            dict.fromkeys(care)
         )
 
         store_episode(episode)
@@ -64,7 +70,7 @@ class ReasoningAgent(Agent):
         why_text = ". ".join(why_parts) + "."
 
         # ==================================================
-        # 🧾 AUTO-GENERATED EPISODE SUMMARY (FULL EPISODE)
+        # 🧾 EPISODE SUMMARY
         # ==================================================
         summary_lines = []
 
