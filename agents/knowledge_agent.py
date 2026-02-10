@@ -13,7 +13,11 @@ class KnowledgeAgent(Agent):
         issue = context.get("issue")
         symptoms = context.get("symptoms", [])
 
-        raw = generate_knowledge(issue, symptoms)
+        raw = generate_knowledge(
+            issue,
+             symptoms,
+             prior_safe_care=context.get("personal_safe_care", [])
+             )
 
         if not raw or not raw.strip():
             context["raw_points"] = []

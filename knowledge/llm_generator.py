@@ -14,6 +14,7 @@ Generate output based on the given context.
 Context:
 - Health issue: {issue}
 - Symptoms: {symptoms}
+-Previously validated safe care actions (if any):{prior_care}
 
 STRICT RULES:
 - Do NOT diagnose
@@ -52,8 +53,18 @@ NO extra text.
 """
 
 
-def generate_knowledge(issue: str, symptoms: list[str]) -> str:
+def generate_knowledge(
+    issue: str,
+    symptoms: list[str],
+    prior_safe_care: list[str] | None = None
+    ) -> str:
     symptoms_text = ", ".join(symptoms) if symptoms else "none"
+
+    prior_text =(
+
+        "\n".join(f"- {c}" for c in prior_safe_care)
+        if prior_safe_care else "none"
+    )
 
     print("[DEBUG][LLM] Generating knowledge")
     print("[DEBUG][LLM] Issue →", issue)
@@ -61,7 +72,8 @@ def generate_knowledge(issue: str, symptoms: list[str]) -> str:
 
     prompt = KNOWLEDGE_PROMPT.format(
         issue=issue or "unknown",
-        symptoms=symptoms_text
+        symptoms=symptoms_text,
+        prior_care=prior_text
     )
 
     response = client.chat.completions.create(

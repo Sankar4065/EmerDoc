@@ -7,6 +7,7 @@ from knowledge.llm_generator import (
 )
 from memory.personal_data import get_issue_percentages_from_symptoms
 from knowledge.severity import should_escalate_issue
+from memory.personal_data import get_safe_care_by_issue
 
 
 class PlannerAgent(Agent):
@@ -70,6 +71,18 @@ class PlannerAgent(Agent):
                     context["issue"] = "unknown"
 
                 print("[DEBUG][PLANNER] Final issue →", context["issue"])
+
+                context["personal_safe_care"] = get_safe_care_by_issue(
+
+                    user_id=context["user_id"],
+                    issue=context["issue"]
+                )
+
+                print(
+
+                    f"[DEBUG][PLANNER] Personal safe care loaded → "
+                    f"{len(context['personal_safe_care'])}"
+                )
 
                 context["stage"] = 2
 

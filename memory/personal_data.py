@@ -137,3 +137,25 @@ def get_issue_percentages_from_symptoms(symptoms: list[str]):
         return {}
 
     return {k: round(v / total * 100, 2) for k, v in weights.items()}
+
+def get_safe_care_by_issue(user_id: str, issue: str, limit: int = 5) -> list[str]:
+    if not issue:
+        return []
+
+    vector = embed(issue)
+
+    results = client.query_points(
+        collection_name=PERSONAL_MEMORY_COLLECTION,
+        query=vector,
+        limit=limit,
+        with_payload=True
+    )
+
+    care = []
+
+    for p in results.points:
+        if p.payload.get("issue") == issue:
+            care.extend(p.payload.get("care_suggestions", []))
+
+    # Deduplicate, preserve order
+    return list(dict.fromkeys(care))

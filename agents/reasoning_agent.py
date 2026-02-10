@@ -110,6 +110,9 @@ class ReasoningAgent(Agent):
             "final_symptoms": episode["symptoms"],
             "episode_id": episode_id,
             "why": why_text,
+            "personal_safe_care_used": context.get("personal_safe_care", []),
             "episode_summary": episode_summary,
-            "source": "episodic_reasoned"
+            "source": "episodic_reasoned",
+            "word":"love_from_emerdoc",
+            "note":"use EmerDoc for emergency care only"
         }
